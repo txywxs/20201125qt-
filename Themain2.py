@@ -23,15 +23,24 @@ from PyQt5.QtWidgets import QTableWidgetItem
 #     def update_download_info(self, video_info_str):
 #         print(video_info_str)
 
-
-class DownloadVideo(QThread):
-    # 自定义一个信号
+class BoFan(QThread):
     signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.douyin_url = ''
+
+    def run(self):
+        print(self.douyin_url.text())
+class DownloadVideo(QThread):
+    # 自定义一个信号
+    signal = pyqtSignal(list)
+
+    def __init__(self):
+        super().__init__()
+        self.douyin_url = ''
         print(self.douyin_url)
+
     def run(self):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -46,59 +55,68 @@ class DownloadVideo(QThread):
                       "pac_uid=1_938979738; yqq_stat=0; pgv_info=ssid=s7993754560; pgv_si=s322131968; userAction=1; "
                       "player_exist=1; qqmusic_fromtag=66; yq_index=0; yplayer_open=1; ts_last=y.qq.com/ "
         }
-        url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=63126059282582387&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w={}&g_tk_new_20200303=408479224&g_tk=408479224&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0".format(self.douyin_url)
+        url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=63126059282582387&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w={}&g_tk_new_20200303=408479224&g_tk=408479224&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0".format(
+            self.douyin_url)
         if self.douyin_url == '//':
             raise StopIteration
         responses = requests.get(url=url, headers=headers)
         res1 = jsonpath.jsonpath(json.loads(responses.text), '$..song.list')[0]
         count = 1
         dicts = []
-        print('选择你要下载的歌曲')
         for i in res1:
             name = ''
             for c in i.get("singer"):
                 name += c.get('name') + ' '
-            dicts.append({'歌名': i.get("name"), '歌手': name, 'mid': i.get("mid")})
+            dicts.append({'歌名': i.get("name"), '歌手': name, 'mid': i.get("mid"), 'count': count})
             print(count, i.get("name") + '  ', '  ' + name)
             print()
             count += 1
-        ints = input('输入序号(请输数字，并没有进行处理，想怎么搞你就怎么搞反正不是数字就没用)[输入（0）结束此次下载]')
-        print(ints)
-        lists = []
-        if ints != '0':
-            for i in dicts:
-                url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module%22%3A%22CDN' \
-                      '.SrfCdnDispatchServer%22' \
-                      '%2C%22method%22%3A%22GetCdnDispatch%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22' \
-                      '%3A%22vkey' \
-                      '.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%2200%22%2C' \
-                      '%22songmid' \
-                      '%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'.format(
-                    i.get("mid"))
-                lists.append(url)
-            urls = lists[int(ints) - 1]
-            gm = dicts[int(ints) - 1].get('歌名')
-            ret = requests.get(url=urls, headers=headers)
-            print(urls)
-            vkey = jsonpath.jsonpath(json.loads(ret.text), '$..flowurl')[0]
-            count_url = 'http://isure.stream.qqmusic.qq.com/{}'.format(vkey)
-
-            one_histroy = {
-                "type": "update",
-                "url": self.douyin_url,
-                "video_title": gm,
-                "data": dicts
-            }
-            # musit = requests.get(url=count_url, headers=self.headers)
-            if vkey:
-
-                pass
-            else:
-                print('这首歌没得播放要vip')
-        else:
-            return
-
-
+        self.signal.emit(dicts)
+        # print('选择你要下载的歌曲')
+        # for i in res1:
+        #     name = ''
+        #     for c in i.get("singer"):
+        #         name += c.get('name') + ' '
+        #     dicts.append({'歌名': i.get("name"), '歌手': name, 'mid': i.get("mid")})
+        #     print(count, i.get("name") + '  ', '  ' + name)
+        #     print()
+        #     count += 1
+        #
+        # ints = input('输入序号(请输数字，并没有进行处理，想怎么搞你就怎么搞反正不是数字就没用)[输入（0）结束此次下载]')
+        # print(ints)
+        # lists = []
+        # if ints != '0':
+        #     for i in dicts:
+        #         url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module%22%3A%22CDN' \
+        #               '.SrfCdnDispatchServer%22' \
+        #               '%2C%22method%22%3A%22GetCdnDispatch%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22' \
+        #               '%3A%22vkey' \
+        #               '.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%2200%22%2C' \
+        #               '%22songmid' \
+        #               '%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'.format(
+        #             i.get("mid"))
+        #         lists.append(url)
+        #     urls = lists[int(ints) - 1]
+        #     gm = dicts[int(ints) - 1].get('歌名')
+        #     ret = requests.get(url=urls, headers=headers)
+        #     print(urls)
+        #     vkey = jsonpath.jsonpath(json.loads(ret.text), '$..flowurl')[0]
+        #     count_url = 'http://isure.stream.qqmusic.qq.com/{}'.format(vkey)
+        #
+        #     one_histroy = {
+        #         "type": "update",
+        #         "url": self.douyin_url,
+        #         "video_title": gm,
+        #         "data": dicts
+        #     }
+        #     # musit = requests.get(url=count_url, headers=self.headers)
+        #     if vkey:
+        #
+        #         pass
+        #     else:
+        #         print('这首歌没得播放要vip')
+        # else:
+        #     return
 
 
 class MainUi(QtWidgets.QMainWindow):
@@ -129,11 +147,11 @@ class MainUi(QtWidgets.QMainWindow):
         self.setCentralWidget(self.main_widget)  # 设置窗口主部件
 
         # 关闭按钮
-        self.left_close = QtWidgets.QPushButton(qtawesome.icon('fa.times', color='white'), "")
+        self.left_close = QtWidgets.QPushButton('💢')
         # 定义一个空白按钮
-        self.left_kb = QtWidgets.QPushButton(qtawesome.icon('fa5s.music', color='white'), "")
+        self.left_kb = QtWidgets.QPushButton('🐷')
         # 最小化按钮
-        self.left_mini = QtWidgets.QPushButton(qtawesome.icon('fa.film', color='white'), "")
+        self.left_mini = QtWidgets.QPushButton("🗡")
         self.left_close.clicked.connect(self.close_window)  # 关联
         self.left_mini.clicked.connect(self.mini)
 
@@ -205,7 +223,7 @@ class MainUi(QtWidgets.QMainWindow):
         # self.newsong_button_5 = QtWidgets.QPushButton(
         #     "Государственный гимн СССР                                  03::29")
         # self.newsong_button_6 = QtWidgets.QPushButton("リブート                ミワ              reboot               04::02")
-
+        # self.right_newsong_layout.addWidget(self.newsong_button_1, 5, 3, )
         # self.right_newsong_layout.addWidget(self.newsong_button_1, 0, 1, )
         self.right_playlist_widget = QtWidgets.QWidget()  # 播放歌单部件
         self.right_playlist_layout = QtWidgets.QGridLayout()  # 播放歌单网格布局
@@ -242,9 +260,9 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_but.setStyleSheet('''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{
         background:pink;}''')
         self.left_close.setStyleSheet(
-            '''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{background:red;}''')
+            '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:pink;}''')
         self.left_mini.setStyleSheet(
-            '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:green;}''')
+            '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:pink;}''')
         self.left_kb.setStyleSheet(
             '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:pink;}''')
         self.left_widget.setStyleSheet('''
@@ -341,6 +359,7 @@ class MainUi(QtWidgets.QMainWindow):
         # self.right_but.connect(self.history_db_thread.update_download_info)
         # # 当history_db_thread里的history_signal信号被触发，调用当前对象的update_table_data方法
         # self.history_db_thread.history_signal.connect(self.update_table_data)
+
     # 无边框的拖动
     def mouseMoveEvent(self, e: QtGui.QMouseEvent):  # 重写移动事件
         self._endPos = e.pos() - self._startPos
@@ -365,35 +384,26 @@ class MainUi(QtWidgets.QMainWindow):
         self.showMinimized()
 
     def CXun(self):
+        self.repaint()
         self.Download = DownloadVideo()
         # self.right_bar_widget_search_input.text()
         self.Download.douyin_url = self.right_bar_widget_search_input.text()
         self.Download.start()
         self.Download.signal.connect(self.update_table_data)
-        print(1213123123,'-112312312321132')
-    def update_table_data(self, param):
-        print("槽函数被执行...", param)
-        # one_download_history = json.loads(param)
-        # row = self.get_row_col(one_download_history)
-        # # print(row)
-        #
-        # # 获取出发信号的类型
-        # signal_type = one_download_history.get("type")
-        #
-        # table_row_num = self.download_history.table.rowCount()
-        # if row >= table_row_num:
-        #     # 每次新建一行时要发送信号给数据库线程，这样就更新了一条数据
-        #     if signal_type == "update":
-        #         temp_info = {
-        #             "url": one_download_history['url'],
-        #             "video_title": one_download_history['video_title']
-        #         }
-        #         self.db_signal.emit(json.dumps(temp_info))
-        #     self.download_history.table.setRowCount(table_row_num + 1)
-        #
-        # self.right_playconsole_layout.table.setItem(0, 0, QTableWidgetItem(one_download_history['video_title']))
-        # self.right_playconsole_layout.table.setItem(0, 1, QTableWidgetItem(one_download_history['percent']))
+        print(1213123123, '-112312312321132')
 
+    def update_table_data(self, param):
+        param = list(param)
+        for i in param:
+            print(i)
+            self.newsong_button_1 = QtWidgets.QPushButton("%s.%s       %s      05::54" % (i.get('count'),i.get('歌名'), i.get('歌手')))
+            self.right_newsong_layout.addWidget(self.newsong_button_1, i.get('count'), 0, )
+        self.newsong_button_1.clicked.connect(self.newsong_button)
+
+    def newsong_button(self):
+        self.bofan = BoFan()
+        self.bofan.douyin_url = self.newsong_button_1
+        self.bofan.start()
 def main():
     app = QtWidgets.QApplication(sys.argv)
     gui = MainUi()
