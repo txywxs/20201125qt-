@@ -145,7 +145,7 @@ class MainUi(QtWidgets.QMainWindow):
             }
             QPushButton#left_button:hover{border-left:4px solid red;font-weight:700;}
             QWidget#left_widget{
-            background:gray;
+            background:pink;
             border-top:1px solid white;
             border-bottom:1px solid white;
             border-left:1px solid white;
