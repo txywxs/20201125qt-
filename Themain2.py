@@ -85,22 +85,17 @@ class MainUi(QtWidgets.QMainWindow):
 
         self.newsong_button_1 = QtWidgets.QPushButton(
             "Bohemian Rhapsody    Queen           Bohemian Rhapsody         05::54")
-        self.newsong_button_2 = QtWidgets.QPushButton(
-            "Dance Monkey         Tones and I     The Kids Are Coming       03::29")
-        self.newsong_button_3 = QtWidgets.QPushButton(
-            "Girls Like You       Maroon 5        Red Pill Blues            03::55")
-        self.newsong_button_4 = QtWidgets.QPushButton(
-            "Cheap Thrills        Sia             Cheap Thrills             03::31")
-        self.newsong_button_5 = QtWidgets.QPushButton(
-            "Государственный гимн СССР                                  03::29")
-        self.newsong_button_6 = QtWidgets.QPushButton("リブート                ミワ              reboot               04::02")
+        # self.newsong_button_2 = QtWidgets.QPushButton(
+        #     "Dance Monkey         Tones and I     The Kids Are Coming       03::29")
+        # self.newsong_button_3 = QtWidgets.QPushButton(
+        #     "Girls Like You       Maroon 5        Red Pill Blues            03::55")
+        # self.newsong_button_4 = QtWidgets.QPushButton(
+        #     "Cheap Thrills        Sia             Cheap Thrills             03::31")
+        # self.newsong_button_5 = QtWidgets.QPushButton(
+        #     "Государственный гимн СССР                                  03::29")
+        # self.newsong_button_6 = QtWidgets.QPushButton("リブート                ミワ              reboot               04::02")
 
         self.right_newsong_layout.addWidget(self.newsong_button_1, 0, 1, )
-        self.right_newsong_layout.addWidget(self.newsong_button_2, 1, 1, )
-        self.right_newsong_layout.addWidget(self.newsong_button_3, 2, 1, )
-        self.right_newsong_layout.addWidget(self.newsong_button_4, 3, 1, )
-        self.right_newsong_layout.addWidget(self.newsong_button_5, 4, 1, )
-        self.right_newsong_layout.addWidget(self.newsong_button_6, 5, 1, )
         self.right_playlist_widget = QtWidgets.QWidget()  # 播放歌单部件
         self.right_playlist_layout = QtWidgets.QGridLayout()  # 播放歌单网格布局
         self.right_playlist_widget.setLayout(self.right_playlist_layout)
@@ -132,7 +127,8 @@ class MainUi(QtWidgets.QMainWindow):
 
         self.left_close.setFixedSize(16, 16)  # 设置关闭按钮的大小
         self.left_mini.setFixedSize(16, 16)  # 设置最小化按钮大小
-
+        self.right_but.setStyleSheet('''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{
+        background:pink;}''')
         self.left_close.setStyleSheet(
             '''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{background:red;}''')
         self.left_mini.setStyleSheet(
