@@ -30,41 +30,51 @@ class MainUi(QtWidgets.QMainWindow):
 
         # 关闭按钮
         self.left_close = QtWidgets.QPushButton(qtawesome.icon('fa.times', color='white'), "")
+        # 定义一个空白按钮
+        self.left_kb = QtWidgets.QPushButton(qtawesome.icon('fa5s.music', color='white'), "")
         # 最小化按钮
         self.left_mini = QtWidgets.QPushButton(qtawesome.icon('fa.film', color='white'), "")
         self.left_close.clicked.connect(self.close_window)  # 关联
         self.left_mini.clicked.connect(self.mini)
-        self.left_label_2 = QtWidgets.QPushButton("我的音乐")
+
+        self.left_label_2 = QtWidgets.QPushButton("歌曲管理")
         self.left_label_2.setObjectName('left_label')
+
         self.left_label_3 = QtWidgets.QPushButton("联系与帮助")
         self.left_label_3.setObjectName('left_label')
+
         self.left_button_5 = QtWidgets.QPushButton(qtawesome.icon('fa.download', color='white'), "下载管理")
         self.left_button_5.setObjectName('left_button')
+
         self.left_button_7 = QtWidgets.QPushButton(qtawesome.icon('fa.comment', color='white'), "反馈建议")
         self.left_button_7.setObjectName('left_button')
+
         self.left_button_8 = QtWidgets.QPushButton(qtawesome.icon('fa.star', color='white'), "关注我们")
         self.left_button_8.setObjectName('left_button')
-        self.left_xxx = QtWidgets.QPushButton(" ")
 
         self.left_layout.addWidget(self.left_mini, 0, 0, 1, 1)
         self.left_layout.addWidget(self.left_close, 0, 2, 1, 1)
 
+        self.left_layout.addWidget(self.left_kb, 0, 1, 1, 1)
+
         self.left_layout.addWidget(self.left_button_5, 7, 0, 1, 3)
         self.left_layout.addWidget(self.left_label_3, 9, 0, 1, 3)
+
+        self.left_layout.addWidget(self.left_label_2, 6, 0, 1, 3)
+
         self.left_layout.addWidget(self.left_button_7, 10, 0, 1, 3)
         self.left_layout.addWidget(self.left_button_8, 11, 0, 1, 3)
 
         self.right_bar_widget = QtWidgets.QWidget()  # 右侧顶部搜索框部件
         self.right_bar_layout = QtWidgets.QGridLayout()  # 右侧顶部搜索框网格布局
         self.right_bar_widget.setLayout(self.right_bar_layout)
-        self.search_icon = QtWidgets.QLabel(chr(0xf002) + ' ' + '搜索  ')
-        self.search_icon.setFont(qtawesome.font('fa', 16))
+        # self.search_icon = QtWidgets.QLabel(chr(0xf002) + ' ' + '搜索  ')
+        # self.search_icon.setFont(qtawesome.font('fa', 16))
         self.right_bar_widget_search_input = QtWidgets.QLineEdit()
         self.right_bar_widget_search_input.setPlaceholderText("输入歌手、歌曲或用户，回车进行搜索")
 
-        self.right_bar_layout.addWidget(self.search_icon, 0, 0, 1, 1)
+        # self.right_bar_layout.addWidget(self.search_icon, 0, 0, 1, 1)
         self.right_bar_layout.addWidget(self.right_bar_widget_search_input, 0, 1, 1, 10)
-
 
         # 查询
         self.right_but = QtWidgets.QPushButton()
@@ -83,8 +93,8 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_newsong_layout = QtWidgets.QGridLayout()  # 最新歌曲部件网格布局
         self.right_newsong_widget.setLayout(self.right_newsong_layout)
 
-        self.newsong_button_1 = QtWidgets.QPushButton(
-            "Bohemian Rhapsody    Queen           Bohemian Rhapsody         05::54")
+        # self.newsong_button_1 = QtWidgets.QPushButton(
+            # "Bohemian Rhapsody    Queen           Bohemian Rhapsody         05::54")
         # self.newsong_button_2 = QtWidgets.QPushButton(
         #     "Dance Monkey         Tones and I     The Kids Are Coming       03::29")
         # self.newsong_button_3 = QtWidgets.QPushButton(
@@ -95,7 +105,7 @@ class MainUi(QtWidgets.QMainWindow):
         #     "Государственный гимн СССР                                  03::29")
         # self.newsong_button_6 = QtWidgets.QPushButton("リブート                ミワ              reboot               04::02")
 
-        self.right_newsong_layout.addWidget(self.newsong_button_1, 0, 1, )
+        # self.right_newsong_layout.addWidget(self.newsong_button_1, 0, 1, )
         self.right_playlist_widget = QtWidgets.QWidget()  # 播放歌单部件
         self.right_playlist_layout = QtWidgets.QGridLayout()  # 播放歌单网格布局
         self.right_playlist_widget.setLayout(self.right_playlist_layout)
@@ -127,13 +137,15 @@ class MainUi(QtWidgets.QMainWindow):
 
         self.left_close.setFixedSize(16, 16)  # 设置关闭按钮的大小
         self.left_mini.setFixedSize(16, 16)  # 设置最小化按钮大小
+        self.left_kb.setFixedSize(16, 16)  # 设置最小化按钮大小
         self.right_but.setStyleSheet('''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{
         background:pink;}''')
         self.left_close.setStyleSheet(
             '''QPushButton{background:#F76677;border-radius:5px;}QPushButton:hover{background:red;}''')
         self.left_mini.setStyleSheet(
             '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:green;}''')
-
+        self.left_kb.setStyleSheet(
+            '''QPushButton{background:#6DDF6D;border-radius:5px;}QPushButton:hover{background:pink;}''')
         self.left_widget.setStyleSheet('''
             QPushButton{border:none;color:white;}
             QPushButton#left_label{
@@ -218,7 +230,7 @@ class MainUi(QtWidgets.QMainWindow):
             }
         ''')
 
-        self.setWindowOpacity(0.9)  # 设置窗口透明度
+        self.setWindowOpacity(1)  # 设置窗口透明度
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # 设置窗口背景透明
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)  # 隐藏边框
 
