@@ -7,7 +7,18 @@ import qtawesome
 from PyQt5.QtCore import pyqtSignal, QThread
 import time
 import requests
-from PyQt5.QtWidgets import QTableWidgetItem
+from PyQt5.QtWidgets import QTableWidgetItem, QPushButton
+
+
+class OpenFileBtn(QPushButton):
+    def __init__(self, file_name):
+        name = file_name
+        super().__init__(name)
+        self.clicked.connect(self.open_file)
+        self.file_name = file_name
+
+    def open_file(self):
+        print(self.file_name)
 
 
 # class HistoryDB(QThread):
@@ -32,6 +43,8 @@ class BoFan(QThread):
 
     def run(self):
         print(self.douyin_url.text())
+
+
 class DownloadVideo(QThread):
     # 自定义一个信号
     signal = pyqtSignal(list)
@@ -394,16 +407,20 @@ class MainUi(QtWidgets.QMainWindow):
 
     def update_table_data(self, param):
         param = list(param)
+        count = 0
         for i in param:
-            print(i)
-            self.newsong_button_1 = QtWidgets.QPushButton("%s.%s       %s      05::54" % (i.get('count'),i.get('歌名'), i.get('歌手')))
-            self.right_newsong_layout.addWidget(self.newsong_button_1, i.get('count'), 0, )
-        self.newsong_button_1.clicked.connect(self.newsong_button)
+            i = dict(i)
+            s = str(i.get('count'))+'.'+i.get('歌名')+'      '+i.get('歌手')+"       05::54"
+            print(s)
+            self.right_newsong_layout.addWidget(OpenFileBtn(s), count,0)
+            # self.right_newsong_layout.addWidget(count,0,OpenFileBtn("%s.%s       %s      05::54" % (i[count].get('count'), i[count].get('歌名'), i[count].get('歌手'))))
+            count += 1
 
-    def newsong_button(self):
-        self.bofan = BoFan()
-        self.bofan.douyin_url = self.newsong_button_1
-        self.bofan.start()
+
+# self.newsong_button_5 = QtWidgets.QPushButton(
+#             "Государственный гимн СССР                                  03::29")
+# self.right_newsong_layout.addWidget(self.newsong_button_5, 4, 1, )
+
 def main():
     app = QtWidgets.QApplication(sys.argv)
     gui = MainUi()
