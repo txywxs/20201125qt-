@@ -1,25 +1,92 @@
 import json
 
+import PyQt5
 import jsonpath
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 import sys
 import qtawesome
 from PyQt5.QtCore import pyqtSignal, QThread
 import time
 import requests
 from PyQt5.QtWidgets import QTableWidgetItem, QPushButton
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtCore import QUrl
+from PyQt5.QtMultimediaWidgets import QVideoWidget
+import re
 
+class Download(QThread):
+    def __init__(self,name,obj):
+        super().__init__()
+        self.url = ''
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/84.0.4147.125 Safari/537.36',
+            'cookie': "pgv_pvi=7982127104; ts_uid=9040743628; pgv_pvid=970052564; RK=6zikp2RyGT; "
+                      "ptcz=b9714eb2392f801721e1c022b9db033c3173f0b436f1c508c304a2a5ff6b170e; tmeLoginType=2; "
+                      "psrf_qqunionid=; tvfe_boss_uuid=65680c3022cf3c18; iip=0; ts_refer=ADTAGh5_playsong; "
+                      "ptui_loginuin=2938979738; psrf_qqopenid=2247151C8813534EB6D1976C1BBE51E3; "
+                      "euin=owEiNeElNKSiNn**; uin=2938979738; psrf_access_token_expiresAt=1613026944; "
+                      "psrf_qqaccess_token=E60A1B623F4A9BDD5566D84ED2D32E81; "
+                      "psrf_qqrefresh_token=D25A186390E730B4546296B18DF4B2D0; o_cookie=2938979738; "
+                      "pac_uid=1_938979738; yqq_stat=0; pgv_info=ssid=s7993754560; pgv_si=s322131968; userAction=1; "
+                      "player_exist=1; qqmusic_fromtag=66; yq_index=0; yplayer_open=1; ts_last=y.qq.com/ "
+        }
+        self.name=name
+        self.obj = obj
+    def run(self):
+        print(123)
+        if not self.url:
+            return
+        ret = requests.get(url=self.url, headers=self.headers)
+        print(self.url)
+        print('-----------------------------------------')
+        vkey = jsonpath.jsonpath(json.loads(ret.text), '$..flowurl')[0]
+        count_url = r'http://isure.stream.qqmusic.qq.com/{}'.format(vkey)
+        musit = requests.get(url=count_url, headers=self.headers, stream=True)
+        name = re.findall(r'\d+\.(.*?) .*',self.name)[0]
+        print(name)
+        self.inc = 0
+        if vkey:
+            self.headers_videos = open('./%s.mp3' % name, 'wb')
+            # 流下载，比起直接content，iter_content 一次只让requests.get获取chunk_size大小的内容，
+            # 等到下载的内容存入文件后，再让requests.get获取后面的
+            last_time = time.time()
+            for chunk in musit.iter_content(chunk_size=1000):  # iter_content是一个可迭代对象
+                self.inc += 1000 / int(musit.headers.get("content-length"))
+                # print()
+                if time.time() - last_time >= 1:
+                    self.obj.setText("音频下载了%0.2f" % (self.inc * 100))
+                    last_time = time.time()
+                self.headers_videos.write(chunk)
+            self.obj.setText("音频下载了100.00")
+            subprocess.call(["open", os.path.join(os.path.expanduser('~')) + "/" + self.file_name])
 
+    # print('开始播放------------')
+
+# class tec(QThread):
+#     def __init__(self,obj):
+#         super().__init__()
+#         self.obj = obj
+#     def run(self):
+#         self.obj.setText("音频下载了%0.2f" % (inc * 100))
 class OpenFileBtn(QPushButton):
-    def __init__(self, file_name):
+    def __init__(self, file_name, mid):
         name = file_name
+        self.mid = mid
         super().__init__(name)
         self.clicked.connect(self.open_file)
         self.file_name = file_name
-
     def open_file(self):
-        print(self.file_name)
-
+        url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module%22%3A%22CDN' \
+              '.SrfCdnDispatchServer%22' \
+              '%2C%22method%22%3A%22GetCdnDispatch%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22' \
+              '%3A%22vkey' \
+              '.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%2200%22%2C' \
+              '%22songmid' \
+              '%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'.format(self.mid)
+        self.Downloads = Download(self.file_name,self)
+        self.Downloads.url = url
+        self.Downloads.start()
 
 # class HistoryDB(QThread):
 #     # 自定义一个信号
@@ -52,10 +119,9 @@ class DownloadVideo(QThread):
     def __init__(self):
         super().__init__()
         self.douyin_url = ''
-        print(self.douyin_url)
 
     def run(self):
-        headers = {
+        self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/84.0.4147.125 Safari/537.36',
             'cookie': "pgv_pvi=7982127104; ts_uid=9040743628; pgv_pvid=970052564; RK=6zikp2RyGT; "
@@ -68,11 +134,11 @@ class DownloadVideo(QThread):
                       "pac_uid=1_938979738; yqq_stat=0; pgv_info=ssid=s7993754560; pgv_si=s322131968; userAction=1; "
                       "player_exist=1; qqmusic_fromtag=66; yq_index=0; yplayer_open=1; ts_last=y.qq.com/ "
         }
-        url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=63126059282582387&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w={}&g_tk_new_20200303=408479224&g_tk=408479224&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0".format(
+        self.url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=63126059282582387&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w={}&g_tk_new_20200303=408479224&g_tk=408479224&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0".format(
             self.douyin_url)
         if self.douyin_url == '//':
             raise StopIteration
-        responses = requests.get(url=url, headers=headers)
+        responses = requests.get(url=self.url, headers=self.headers)
         res1 = jsonpath.jsonpath(json.loads(responses.text), '$..song.list')[0]
         count = 1
         dicts = []
@@ -85,6 +151,7 @@ class DownloadVideo(QThread):
             print()
             count += 1
         self.signal.emit(dicts)
+
         # print('选择你要下载的歌曲')
         # for i in res1:
         #     name = ''
@@ -245,27 +312,27 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_layout.addWidget(self.right_newsong_widget, 5, 0, 1, 5)
         self.right_layout.addWidget(self.right_playlist_widget, 5, 5, 1, 4)
 
-        self.right_process_bar = QtWidgets.QProgressBar()  # 播放进度部件
-        self.right_process_bar.setValue(49)
-        self.right_process_bar.setFixedHeight(3)  # 设置进度条高度
-        self.right_process_bar.setTextVisible(False)  # 不显示进度条文字
+        # self.right_process_bar = QtWidgets.QProgressBar()  # 播放进度部件
+        # self.right_process_bar.setValue(49)
+        # self.right_process_bar.setFixedHeight(3)  # 设置进度条高度
+        # self.right_process_bar.setTextVisible(False)  # 不显示进度条文字
 
-        self.right_playconsole_widget = QtWidgets.QWidget()  # 播放控制部件
-        self.right_playconsole_layout = QtWidgets.QGridLayout()  # 播放控制部件网格布局层
-        self.right_playconsole_widget.setLayout(self.right_playconsole_layout)
+        # self.right_playconsole_widget = QtWidgets.QWidget()  # 播放控制部件
+        # self.right_playconsole_layout = QtWidgets.QGridLayout()  # 播放控制部件网格布局层
+        # self.right_playconsole_widget.setLayout(self.right_playconsole_layout)
 
-        self.console_button_1 = QtWidgets.QPushButton(qtawesome.icon('fa.backward', color='#F76677'), "")
-        self.console_button_2 = QtWidgets.QPushButton(qtawesome.icon('fa.forward', color='#F76677'), "")
-        self.console_button_3 = QtWidgets.QPushButton(qtawesome.icon('fa.pause', color='#F76677', font=18), "")
-        self.console_button_3.setIconSize(QtCore.QSize(30, 30))
+        # self.console_button_1 = QtWidgets.QPushButton(qtawesome.icon('fa.backward', color='#F76677'), "")
+        # self.console_button_2 = QtWidgets.QPushButton(qtawesome.icon('fa.forward', color='#F76677'), "")
+        # self.console_button_3 = QtWidgets.QPushButton(qtawesome.icon('fa.pause', color='#F76677', font=18), "")
+        # self.console_button_3.setIconSize(QtCore.QSize(30, 30))
 
-        self.right_playconsole_layout.addWidget(self.console_button_1, 0, 0)
-        self.right_playconsole_layout.addWidget(self.console_button_2, 0, 2)
-        self.right_playconsole_layout.addWidget(self.console_button_3, 0, 1)
-        self.right_playconsole_layout.setAlignment(QtCore.Qt.AlignCenter)  # 设置布局内部件居中显示
+        # self.right_playconsole_layout.addWidget(self.console_button_1, 0, 0)
+        # self.right_playconsole_layout.addWidget(self.console_button_2, 0, 2)
+        # self.right_playconsole_layout.addWidget(self.console_button_3, 0, 1)
+        # self.right_playconsole_layout.setAlignment(QtCore.Qt.AlignCenter)  # 设置布局内部件居中显示
 
-        self.right_layout.addWidget(self.right_process_bar, 9, 0, 1, 9)
-        self.right_layout.addWidget(self.right_playconsole_widget, 10, 0, 1, 9)
+        # self.right_layout.addWidget(self.right_process_bar, 9, 0, 1, 9)
+        # self.right_layout.addWidget(self.right_playconsole_widget, 10, 0, 1, 9)
 
         self.left_close.setFixedSize(16, 16)  # 设置关闭按钮的大小
         self.left_mini.setFixedSize(16, 16)  # 设置最小化按钮大小
@@ -350,17 +417,17 @@ class MainUi(QtWidgets.QMainWindow):
                 background:LightGray;
             }
         ''')
-        self.right_process_bar.setStyleSheet('''
-            QProgressBar::chunk {
-                background-color: #F76677;
-            }
-        ''')
+        # self.right_process_bar.setStyleSheet('''
+        #     QProgressBar::chunk {
+        #         background-color: #F76677;
+        #     }
+        # ''')
 
-        self.right_playconsole_widget.setStyleSheet('''
-            QPushButton{
-                border:none;
-            }
-        ''')
+        # self.right_playconsole_widget.setStyleSheet('''
+        #     QPushButton{
+        #         border:none;
+        #     }
+        # ''')
 
         self.setWindowOpacity(0.95)  # 设置窗口透明度
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # 设置窗口背景透明
@@ -403,16 +470,17 @@ class MainUi(QtWidgets.QMainWindow):
         self.Download.douyin_url = self.right_bar_widget_search_input.text()
         self.Download.start()
         self.Download.signal.connect(self.update_table_data)
-        print(1213123123, '-112312312321132')
 
     def update_table_data(self, param):
         param = list(param)
         count = 0
+
         for i in param:
             i = dict(i)
-            s = str(i.get('count'))+'.'+i.get('歌名')+'      '+i.get('歌手')+"       05::54"
+            print(i)
+            s = str(i.get('count')) + '.' + i.get('歌名') + '      ' + i.get('歌手') + "       05::54"
             print(s)
-            self.right_newsong_layout.addWidget(OpenFileBtn(s), count,0)
+            self.right_newsong_layout.addWidget(OpenFileBtn(s, i.get('mid')), count, 0)
             # self.right_newsong_layout.addWidget(count,0,OpenFileBtn("%s.%s       %s      05::54" % (i[count].get('count'), i[count].get('歌名'), i[count].get('歌手'))))
             count += 1
 
