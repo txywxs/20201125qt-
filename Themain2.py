@@ -1,21 +1,23 @@
 import json
-
+import os
+import subprocess
 import PyQt5
 import jsonpath
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia, sip
 import sys
 import qtawesome
 from PyQt5.QtCore import pyqtSignal, QThread
 import time
 import requests
-from PyQt5.QtWidgets import QTableWidgetItem, QPushButton
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QPixmap, QPalette, QBrush
 from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtWidgets import QTableWidgetItem, QPushButton, QWidget, QMessageBox, QDialog
+
 import re
 
+
 class Download(QThread):
-    def __init__(self,name,obj):
+    def __init__(self, name, obj, names, count):
         super().__init__()
         self.url = ''
         self.headers = {
@@ -31,37 +33,43 @@ class Download(QThread):
                       "pac_uid=1_938979738; yqq_stat=0; pgv_info=ssid=s7993754560; pgv_si=s322131968; userAction=1; "
                       "player_exist=1; qqmusic_fromtag=66; yq_index=0; yplayer_open=1; ts_last=y.qq.com/ "
         }
-        self.name=name
+        self.name = name
         self.obj = obj
-    def run(self):
-        print(123)
-        if not self.url:
-            return
-        ret = requests.get(url=self.url, headers=self.headers)
-        print(self.url)
-        print('-----------------------------------------')
-        vkey = jsonpath.jsonpath(json.loads(ret.text), '$..flowurl')[0]
-        count_url = r'http://isure.stream.qqmusic.qq.com/{}'.format(vkey)
-        musit = requests.get(url=count_url, headers=self.headers, stream=True)
-        name = re.findall(r'\d+\.(.*?) .*',self.name)[0]
-        print(name)
-        self.inc = 0
-        if vkey:
-            self.headers_videos = open('./%s.mp3' % name, 'wb')
-            # 流下载，比起直接content，iter_content 一次只让requests.get获取chunk_size大小的内容，
-            # 等到下载的内容存入文件后，再让requests.get获取后面的
-            last_time = time.time()
-            for chunk in musit.iter_content(chunk_size=1000):  # iter_content是一个可迭代对象
-                self.inc += 1000 / int(musit.headers.get("content-length"))
-                # print()
-                if time.time() - last_time >= 1:
-                    self.obj.setText("音频下载了%0.2f" % (self.inc * 100))
-                    last_time = time.time()
-                self.headers_videos.write(chunk)
-            self.obj.setText("音频下载了100.00")
-            subprocess.call(["open", os.path.join(os.path.expanduser('~')) + "/" + self.file_name])
+        self.obj_name = obj.text()
+        self.names = names
+        self.count = count
 
-    # print('开始播放------------')
+    def run(self):
+        if not os.path.exists(r'.\{}{}.mp3'.format(self.count, self.names)):
+            if not self.url:
+                return
+
+            ret = requests.get(url=self.url, headers=self.headers)
+            vkey = jsonpath.jsonpath(json.loads(ret.text), '$..flowurl')[0]
+            count_url = r'http://isure.stream.qqmusic.qq.com/{}'.format(vkey)
+
+            # exit()
+            musit = requests.get(url=count_url, headers=self.headers, stream=True)
+            name = re.findall(r'\d+\.?(.*?) .*', self.name)[0]
+            self.inc = 0
+            if vkey:
+                self.headers_videos = open('./{}{}.mp3'.format(self.count, self.names), 'wb')
+                # 流下载，比起直接content，iter_content 一次只让requests.get获取chunk_size大小的内容，
+                # 等到下载的内容存入文件后，再让requests.get获取后面的
+                last_time = time.time()
+
+                for chunk in musit.iter_content(chunk_size=1000):  # iter_content是一个可迭代对象
+                    self.inc += 1000 / int(musit.headers.get("content-length"))
+                    if time.time() - last_time >= 1:
+                        self.obj.setText("%s                       音频下载了%0.2f" % (self.obj_name, self.inc * 100))
+                        last_time = time.time()
+                    self.headers_videos.write(chunk)
+                self.obj.setText("%s                       音频下载了100.00" % self.obj_name)
+                os.startfile(r'.\{}{}.mp3'.format(self.count, self.names))
+                time.sleep(1)
+        else:
+            os.startfile(r'.\{}{}.mp3'.format(self.count, self.names))
+
 
 # class tec(QThread):
 #     def __init__(self,obj):
@@ -70,13 +78,21 @@ class Download(QThread):
 #     def run(self):
 #         self.obj.setText("音频下载了%0.2f" % (inc * 100))
 class OpenFileBtn(QPushButton):
-    def __init__(self, file_name, mid):
+    def __init__(self, file_name, mid, names, count):
+        # self.setStyleSheet("")
         name = file_name
         self.mid = mid
-        super().__init__(name)
-        self.clicked.connect(self.open_file)
-        self.file_name = file_name
-    def open_file(self):
+        self.names = names
+        self.count = count
+        if not os.path.exists(r'.\{}{}.mp3'.format(self.count, self.names)):
+            super().__init__(name)
+            self.clicked.connect(self.Dow_File)
+            self.file_name = file_name
+        else:
+            super().__init__("%s                       音频下载了100.00" % name)
+            self.clicked.connect(self.Open_filt)
+
+    def Dow_File(self):
         url = 'https://u.y.qq.com/cgi-bin/musicu.fcg?data=%7B%22req%22%3A%7B%22module%22%3A%22CDN' \
               '.SrfCdnDispatchServer%22' \
               '%2C%22method%22%3A%22GetCdnDispatch%22%2C%22param%22%3A%7B%7D%7D%2C%22req_0%22%3A%7B%22module%22' \
@@ -84,9 +100,13 @@ class OpenFileBtn(QPushButton):
               '.GetVkeyServer%22%2C%22method%22%3A%22CgiGetVkey%22%2C%22param%22%3A%7B%22guid%22%3A%2200%22%2C' \
               '%22songmid' \
               '%22%3A%5B%22{}%22%5D%2C%22songtype%22%3A%5B0%5D%2C%22uin%22%3A%2200%22%7D%7D%7D'.format(self.mid)
-        self.Downloads = Download(self.file_name,self)
+        self.Downloads = Download(self.file_name, self, self.names, self.count)
         self.Downloads.url = url
         self.Downloads.start()
+
+    def Open_filt(self):
+        os.startfile(r'.\{}{}.mp3'.format(self.count, self.names))
+
 
 # class HistoryDB(QThread):
 #     # 自定义一个信号
@@ -147,8 +167,6 @@ class DownloadVideo(QThread):
             for c in i.get("singer"):
                 name += c.get('name') + ' '
             dicts.append({'歌名': i.get("name"), '歌手': name, 'mid': i.get("mid"), 'count': count})
-            print(count, i.get("name") + '  ', '  ' + name)
-            print()
             count += 1
         self.signal.emit(dicts)
 
@@ -199,7 +217,20 @@ class DownloadVideo(QThread):
         #     return
 
 
-class MainUi(QtWidgets.QMainWindow):
+class New_wins(QWidget,QThread):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+
+    def init_ui(self):
+        print('2-----')
+        self.setFixedSize(1024, 600)
+        self.main_widget = QtWidgets.QWidget()
+        self.main_layout = QtWidgets.QGridLayout()
+        self.main_widget.setLayout(self.main_layout)
+        self.main_widget.show()
+
+class MainUi(QtWidgets.QMainWindow, QVideoWidget):
     db_signal = pyqtSignal(str)
 
     def __init__(self):
@@ -216,7 +247,6 @@ class MainUi(QtWidgets.QMainWindow):
         self.left_widget.setObjectName('left_widget')
         self.left_layout = QtWidgets.QGridLayout()
         self.left_widget.setLayout(self.left_layout)
-
         self.right_widget = QtWidgets.QWidget()
         self.right_widget.setObjectName('right_widget')
         self.right_layout = QtWidgets.QGridLayout()
@@ -397,7 +427,7 @@ class MainUi(QtWidgets.QMainWindow):
             ''')
         self.right_playlist_widget.setStyleSheet(
             '''
-                QToolButton{border:none;}
+                QToolButton{border:none;background:LightGray;}
                 QToolButton:hover{border-bottom:2px solid #F76677;}
             ''')
         self.right_newsong_widget.setStyleSheet('''
@@ -409,6 +439,7 @@ class MainUi(QtWidgets.QMainWindow):
                 padding-left:5px;
                 padding-right:10px;
                 text-align:left;
+                background:white;
             }
             QPushButton:hover{
                 color:black;
@@ -439,7 +470,9 @@ class MainUi(QtWidgets.QMainWindow):
         # self.right_but.connect(self.history_db_thread.update_download_info)
         # # 当history_db_thread里的history_signal信号被触发，调用当前对象的update_table_data方法
         # self.history_db_thread.history_signal.connect(self.update_table_data)
+        # self.left_button_7.clicked.connect(self.New_Win)
 
+        self.left_button_7.clicked.connect(self.New_win)
     # 无边框的拖动
     def mouseMoveEvent(self, e: QtGui.QMouseEvent):  # 重写移动事件
         self._endPos = e.pos() - self._startPos
@@ -456,6 +489,19 @@ class MainUi(QtWidgets.QMainWindow):
             self._startPos = None
             self._endPos = None
 
+    def New_win(self):
+        # self.reply = QMessageBox.information(self,
+        #                                 "消息框标题",
+        #                                 "这是一条消息。",
+        #                                 QMessageBox.Yes | QMessageBox.No)
+        self.palette = QPalette()
+        self.dl = QDialog(self)
+        self.dl.setWindowTitle('WX号')
+        self.dl.resize(500,659)
+        self.palette.setBrush(QPalette.Background,QBrush(QPixmap('./0.jpg')))
+        self.dl.setPalette(self.palette)
+        # self.dl.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.dl.exec()
     # 关闭按钮动作函数
     def close_window(self):
         self.close()
@@ -464,7 +510,6 @@ class MainUi(QtWidgets.QMainWindow):
         self.showMinimized()
 
     def CXun(self):
-        self.repaint()
         self.Download = DownloadVideo()
         # self.right_bar_widget_search_input.text()
         self.Download.douyin_url = self.right_bar_widget_search_input.text()
@@ -472,16 +517,12 @@ class MainUi(QtWidgets.QMainWindow):
         self.Download.signal.connect(self.update_table_data)
 
     def update_table_data(self, param):
+        self.repaint()
         param = list(param)
         count = 0
-
         for i in param:
-            i = dict(i)
-            print(i)
             s = str(i.get('count')) + '.' + i.get('歌名') + '      ' + i.get('歌手') + "       05::54"
-            print(s)
-            self.right_newsong_layout.addWidget(OpenFileBtn(s, i.get('mid')), count, 0)
-            # self.right_newsong_layout.addWidget(count,0,OpenFileBtn("%s.%s       %s      05::54" % (i[count].get('count'), i[count].get('歌名'), i[count].get('歌手'))))
+            self.right_newsong_layout.addWidget(OpenFileBtn(s, i.get('mid'), i.get('歌名'), i.get('count')), count, 0)
             count += 1
 
 
@@ -493,7 +534,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     gui = MainUi()
     gui.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':
